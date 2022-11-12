@@ -1,0 +1,6 @@
+"layers/JW02731-F090W.png" (240, 87, 100)
+"layers/JW02731-F187N.png" (210, 100, 100)
+"layers/JW02731-F200W.png" (150, 100, 100)
+"layers/JW02731-F335M.png" (65, 90, 100)
+"layers/JW02731-F444W.png" (350, 90, 100)
+"layers/JW02731-F470N.png" (0, 100, 100)
