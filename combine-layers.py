@@ -57,7 +57,11 @@ def parse_colors_file(colors_filepath: str) -> Dict[str, Tuple[float, float, flo
                 hsv.append(random.randint(lo, hi))
             else:
                 hsv.append(int(component))
-        image_colors[abspath(filename)] = (hsv[0] / 360, hsv[1] / 100, hsv[2] / 100)
+        image_colors[abspath(filename).upper()] = (
+            hsv[0] / 360,
+            hsv[1] / 100,
+            hsv[2] / 100,
+        )
 
     return image_colors
 
@@ -81,7 +85,7 @@ if __name__ == "__main__":
         nargs="?",
         help=(
             "path to file with custom colors for each layer (see lines 15-38 "
-            "of this file or https://github.com/evoth/webbster/blob/main/README.md#colors-file-formatting "
+            "of this file or https://github.com/evoth/webbster#colors-file-formatting "
             "for more info)"
         ),
     )
@@ -121,8 +125,8 @@ if __name__ == "__main__":
         custom_colors = parse_colors_file(colors_filepath)
     layers = []
     for image_filepath in image_filepaths:
-        if colors_filepath and abspath(image_filepath) in custom_colors:
-            hsv = custom_colors[abspath(image_filepath)]
+        if colors_filepath and abspath(image_filepath).upper() in custom_colors:
+            hsv = custom_colors[abspath(image_filepath).upper()]
             layers.append(WebbsterLayer.fromImageFile(image_filepath, *hsv))
         else:
             layers.append(WebbsterLayer.fromImageFile(image_filepath))

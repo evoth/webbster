@@ -1,0 +1,3 @@
+"layers/JW02739_MIRI-F1130W.png" (135, 100, 95)
+"layers/JW02739_MIRI-F1500W.png" (0, 100, 100)
+"layers/JW02739_MIRI-F770W.png" (237, 84, 100)

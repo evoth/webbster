@@ -8,7 +8,7 @@ from skimage import exposure
 from skimage.io import imsave
 from skimage.util import img_as_ubyte
 
-from .jwst_metadata import WebbFilters
+from .jwst_metadata import WebbFilters, WebbFilter
 
 
 class WebbsterFITS:
@@ -28,30 +28,40 @@ class WebbsterFITS:
         self.naxis2 = self.hdu.header["NAXIS2"]
         self.res = self.naxis1 * self.naxis2
         self.data = self.hdu.data
-        self.filter_name = self.get_filter_name()
-        self.name = self.filter_name or "NONE"
+        self.filter = self.get_filter()
+        self.name = self.filter.get_filter_name() if self.filter else "NONE"
 
-    def get_filter_name(self) -> str:
+    def get_filter(self) -> WebbFilter:
         """
-        Gets filter name by searching for an instance of a filter name in fits
+        Gets filter by searching for an instance of a filter name in fits
         filename. If there are multiple instances, prefers the one that is on
         the pupil wheel, or appears last.
 
         If no instance of a filter name is found, returns `None`.
         """
 
-        # Chooses whichever filter appears last or is on the pupil ring, if
-        # multiple appear.
-        filter_index = -1
-        filter_name = None
+        # Get instrument and filter names from fits filename
+        try:
+            name_parts = self.fits_filename.split("_")
+            instrument = name_parts[2]
+            filters = name_parts[3].split("-")
+        except:
+            return None
 
-        for filter in WebbFilters.NIRCAM_FILTERS.list:
-            index = self.fits_filename.find(filter.name)
-            if index != -1 and (index > filter_index or filter.is_pupil):
-                filter_index = index
-                filter_name = filter.name
+        # Get dictionary of filters for the specific instrument
+        if instrument not in WebbFilters.FILTERS:
+            return None
+        instrument_filters = WebbFilters.FILTERS[instrument].dict
 
-        return filter_name
+        # Find appropriate filter
+        fits_filter = None
+        for filter in reversed(filters):
+            if filter in instrument_filters and (
+                fits_filter is None or instrument_filters[filter].is_pupil
+            ):
+                fits_filter = instrument_filters[filter]
+
+        return fits_filter
 
     def adjust_contrast(self):
         """
@@ -123,7 +133,7 @@ class WebbsterFITS:
             filepath = join(
                 folder,
                 filename
-                or f"{self.fits_filename.split('-')[0]}-{self.name}.{extension}",
+                or f"{self.fits_filename.split('-')[0]}_{self.name}.{extension}",
             )
             imsave(filepath, self.png_data)
             return filepath

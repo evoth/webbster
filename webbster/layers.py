@@ -7,7 +7,7 @@ from skimage import color
 from skimage.io import imread
 
 from .fits import WebbsterFITS
-from .jwst_metadata import WebbFilters
+from .jwst_metadata import WebbFilters, WebbFilter
 
 # To prevent messages like "PIL.Image.DecompressionBombError:
 # Image size (182222791 pixels) exceeds limit of 178956970 pixels,
@@ -24,26 +24,38 @@ class WebbsterLayer:
         hue: float = None,
         saturation: float = None,
         value: float = None,
-        filter_name: str = None,
+        filter: WebbFilter = None,
     ) -> "WebbsterLayer":
         """Creates WebbsterLayer from an image file.
 
-        If `filter_name` is provided, gets the colors for the filter. Otherwise,
+        If `filter` is provided, gets the colors for that filter. Otherwise,
         attempts to extract the filter name from the filename. Then, if `hue`
         and/or `saturation` are provided, uses those values instead. The `value`
         defaults to 1 unless otherwise specified."""
 
-        # If no filter name is provided, attempts to extract it from the
-        # filename. If the name was auto generated using the WebbsterFITS
-        # save_image() function, it will contain the filter name.
-        if not filter_name:
-            for filter in WebbFilters.NIRCAM_FILTERS.list:
-                if filter.name in basename(image_file).upper():
-                    filter_name = filter.name
-                    break
+        # If no filter is provided, looks for the filter name in the filename in
+        # the format "*_INSTRUMENT-FILTER.ext". If the name was auto generated
+        # using the WebbsterFITS save_image() function, it should be in this
+        # format.
+        if not filter:
+            try:
+                instrument, filter_name = (
+                    basename(image_file).upper().split(".")[0].split("_")[1].split("-")
+                )
+            except:
+                instrument = None
+                filter_name = None
+
+            if (
+                instrument
+                and filter_name
+                and instrument in WebbFilters.FILTERS
+                and filter_name in WebbFilters.FILTERS[instrument].dict
+            ):
+                filter = WebbFilters.FILTERS[instrument].dict[filter_name]
 
         hue, saturation, value = WebbsterLayer.get_hsv(
-            hue, saturation, value, filter_name, strict=True
+            hue, saturation, value, filter, strict=True
         )
         return WebbsterLayer(
             imread(image_file), basename(image_file), hue, saturation, value, image_file
@@ -54,20 +66,20 @@ class WebbsterLayer:
         hue: float = None,
         saturation: float = None,
         value: float = None,
-        filter_name: str = None,
+        filter: WebbFilter = None,
     ) -> "WebbsterLayer":
         """Creates WebbsterLayer from a WebbsterFITS.
 
         First, defaults to hue and saturation from the filter of the
-        WebbsterFITS. Then, if `filter_name` is provided, uses the colors for
-        that filter. Last, if `hue` and/or `saturation` are provided, uses those
+        WebbsterFITS. Then, if `filter` is provided, uses the colors for that
+        filter. Last, if `hue` and/or `saturation` are provided, uses those
         values instead. The `value` defaults to 1 unless otherwise specified."""
 
         hue, saturation, value = WebbsterLayer.get_hsv(
             hue,
             saturation,
             value,
-            filter_name or fits.filter_name,
+            filter or fits.filter,
         )
         return WebbsterLayer(fits.png_data, fits.name, hue, saturation, value)
 
@@ -107,23 +119,21 @@ class WebbsterLayer:
         hue: float = None,
         saturation: float = None,
         value: float = None,
-        filter_name: str = None,
+        filter: WebbFilter = None,
         strict: bool = False,
     ) -> Tuple[float, float, float]:
         """Returns a tuple of (hue, saturation, value) based on the input.
 
-        If `filter_name` is provided, gets the colors for the filter. Then, if
-        `hue` and/or `saturation` are provided, uses those values instead. The
-        `value` defaults to 1 unless otherwise specified. If `strict` is `True`,
-        then it will raise an error if insufficient information is given to get
-        both a hue and saturation."""
+        If `filter` is provided, gets the colors for the filter. Then, if `hue`
+        and/or `saturation` are provided, uses those values instead. The `value`
+        defaults to 1 unless otherwise specified. If `strict` is `True`, then it
+        will raise an error if insufficient information is given to get both a
+        hue and saturation."""
 
         new_hue = new_saturation = None
 
-        if filter_name:
-            new_hue, new_saturation = WebbsterLayer.get_filter_hue_saturation(
-                filter_name
-            )
+        if filter:
+            new_hue, new_saturation = WebbsterLayer.get_filter_hue_saturation(filter)
         if hue is None:
             hue = new_hue
         if saturation is None:
@@ -131,12 +141,12 @@ class WebbsterLayer:
 
         if (hue is None or saturation is None) and strict:
             raise ValueError(
-                "Must at least provide either filter_name or hue and saturation."
+                "Must at least provide either filter or hue and saturation."
             )
 
         return (hue, saturation, 1 if value is None else value)
 
-    def get_filter_hue_saturation(filter_name: str) -> Tuple[float, float]:
+    def get_filter_hue_saturation(filter: WebbFilter) -> Tuple[float, float]:
         """
         Gets representative hue and saturation for a filter based on the
         filter's pivot wavelength and bandwidth. Returns a tuple of
@@ -144,30 +154,20 @@ class WebbsterLayer:
         """
 
         # If there if no filter, this layer will be monochrome
-        if not filter_name:
+        if not filter:
             return (0, 0)
 
         # Each filter is given a hue based on where its wavelength falls in
-        # relation to the entire range of the NIRCAM instrument, and a
+        # relation to the entire range of the filter's instrument, and a
         # saturation based on its bandwidth.
-        all_bandwidths = [
-            filter.bandwidth for filter in WebbFilters.NIRCAM_FILTERS.list
-        ]
+        instrument_filters = WebbFilters.FILTERS[filter.instrument].list
+        all_bandwidths = [filter.bandwidth for filter in instrument_filters]
         bw_range = (min(all_bandwidths), max(all_bandwidths))
-        all_wavelengths = [
-            filter.wavelength for filter in WebbFilters.NIRCAM_FILTERS.list
-        ]
+        all_wavelengths = [filter.wavelength for filter in instrument_filters]
         wl_range = (min(all_wavelengths), max(all_wavelengths))
 
         hue_range = (0, 240 / 360)
         saturation_range = (0, 1)
-
-        # Gets the filter properties associated with the filter name
-        if filter_name.upper() not in WebbFilters.NIRCAM_FILTERS.dict:
-            raise ValueError(
-                "Invalid filter name. See jwst_metadata.py for valid filter names."
-            )
-        filter = WebbFilters.NIRCAM_FILTERS.dict[filter_name.upper()]
 
         # Get the proportion of the wavelength on the wavelength range
         wl_prop = (filter.wavelength - wl_range[0]) / (wl_range[1] - wl_range[0])
