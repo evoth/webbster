@@ -17,7 +17,7 @@ if __name__ == "__main__":
     # Set up command line arguments with argparse
     parser = argparse.ArgumentParser(
         description="""Converts a folder of FITS images to a single image. 
-        Optionally exports a monochrome image for each layer."""
+        Optionally exports a grayscale image for each layer."""
     )
     parser.add_argument(
         "INPUT_FOLDER",
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "LAYERS_FOLDER",
         nargs="?",
-        help="folder in which to export a monochrome image for each layer",
+        help="folder into which to export a grayscale image for each layer",
     )
     parser.add_argument(
         "-j",

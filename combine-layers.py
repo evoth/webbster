@@ -69,12 +69,12 @@ def parse_colors_file(colors_filepath: str) -> Dict[str, Tuple[float, float, flo
 if __name__ == "__main__":
     # Set up command line arguments with argparse
     parser = argparse.ArgumentParser(
-        description="""Converts a folder of monochrome layer images to a single 
+        description="""Converts a folder of grayscale layer images to a single 
         image, with the option to customize the color of each layer."""
     )
     parser.add_argument(
         "INPUT_FOLDER",
-        help="a folder containing the monochrome layer images to compile",
+        help="a folder containing the grayscale layer images to compile",
     )
     parser.add_argument(
         "OUTPUT_IMAGE",

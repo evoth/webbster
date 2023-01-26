@@ -153,7 +153,7 @@ class WebbsterLayer:
         (hue, saturation).
         """
 
-        # If there if no filter, this layer will be monochrome
+        # If there if no filter, this layer will be grayscale
         if not filter:
             return (0, 0)
 
