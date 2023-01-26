@@ -20,7 +20,7 @@ A simple, easy-to-use utility to transform raw JWST (James Webb Space Telescope)
 - [Tutorial](#tutorial)
   - [1. Download data from the MAST Portal](#1-download-data-from-the-mast-portal)
   - [2. Turn the raw images into viewable, aligned images with `fits-to-image.py`](#2-turn-the-raw-images-into-viewable-aligned-images-with-fits-to-imagepy)
-  - [3. Tweak the result using `combine-layers.py`](#3-tweak-the-result-using-combine-layerspy)
+  - [3. Adjust the result using `combine-layers.py`](#3-adjust-the-result-using-combine-layerspy)
 - [Downloading data from the MAST portal](#downloading-data-from-the-mast-portal)
   - [Choose an object](#choose-an-object)
   - [Download ZIP file](#download-zip-file)
@@ -84,7 +84,7 @@ python fits-to-image.py [-h] [-j] INPUT_FOLDER OUTPUT_IMAGE [LAYERS_FOLDER]
 
 - `INPUT_FOLDER` must be a folder of files ending in `_i2d.fits` taken at the same time by JWST (see [guide on downloading data](#downloading-data-from-the-mast-portal) below).
 - Recommended file extensions for `OUTPUT_IMAGE` are either `.png` or `.jpg`. Using `.png` with give you near-lossless 8-bit images, but the files may be large. Using `.jpg` saves on space with little loss of quality.
-- `LAYERS_FOLDER` is not required, but it is necessary if you end up wanting to tweak the colors using [`combine-layers.py`](#combine-layerspy).
+- `LAYERS_FOLDER` is not required, but it is necessary if you end up wanting to adjust the colors using [`combine-layers.py`](#combine-layerspy).
   - The default extension for the layers is `.png`, but if you need to save on space, use the `-j` flag to save layers in `.jpg`.
 
 ## `combine-layers.py`
@@ -149,7 +149,7 @@ Any image present in the folder that is not referenced in the colors file will b
 ### 2. Turn the raw images into viewable, aligned images with `fits-to-image.py`
 
 - Take a look at [`fits-to-image.py`](#fits-to-imagepy) above. This script will turn each of our `.fits` files into a layer image, then attempt to combine these grayscale images into a single color image.
-- To do this, we tell the script where our `.fits` files are located, where we want the final image to be saved, and where we want it to save the intermediate layer images (the latter is optional, but necessary if we want to tweak the result like in step 3).
+- To do this, we tell the script where our `.fits` files are located, where we want the final image to be saved, and where we want it to save the intermediate layer images (the latter is optional, but necessary if we want to adjust the result like in step 3).
 - For example, if your `.fits` files are in a folder called `fits`, and you want it to save the layers to a folder called `layers`, and you want the output image to be called `cosmic_cliffs.jpg`, then you would call `fits-to-image.py` as shown below:
 
   ```
@@ -158,7 +158,7 @@ Any image present in the folder that is not referenced in the colors file will b
 
 - If everything worked correctly, the layers folder should now have a grayscale image named something like `JW02731_NIRCAM-F090W.png` for each `.fits` file you had, and the final image should also be ready to view!
 
-### 3. Tweak the result using `combine-layers.py`
+### 3. Adjust the result using `combine-layers.py`
 
 - See [`combine-layers.py`](#combine-layerspy) above. This script combines preprocessed layers images (created using `fits-to-image.py`) into a single color image, with the option to customize the colors of each layer so that you can get any look you want.
 - Running `combine-layers.py` without specifying a "colors file" will simply result in the same image created in step 2. But, if we have it export the colors it used, we can then have a starting point from which to start getting creative.
@@ -179,7 +179,7 @@ Any image present in the folder that is not referenced in the colors file will b
   "layers/JW02731_NIRCAM-F470N.png" (0, 98, 100)
   ```
 
-- The values on the right are the (hue, saturation, value) for each layer, which you can tweak according to the [colors file formatting](#colors-file-formatting). Assuming we've done this and saved the file as `custom_colors.txt`, then you can make a new image using those colors by running `combine-layers.py` again, but this time using the file as an input:
+- The values on the right are the (hue, saturation, value) for each layer, which you can adjust according to the [colors file formatting](#colors-file-formatting). Assuming we've done this and saved the file as `custom_colors.txt`, then you can make a new image using those colors by running `combine-layers.py` again, but this time using the file as an input:
 
   ```
   python combine-layers.py layers cosmic_cliffs_custom.jpg custom_colors.txt
@@ -232,7 +232,7 @@ If you don't know what object you want to make an image of, maybe try looking at
 
 ## Example images
 
-| From `fits-to-image.py` (cropped)                                                                                                                         | Tweaked using `combine-layers.py`                                                                                                                                       | Colors file used                                                                   |
+| From `fits-to-image.py` (cropped)                                                                                                                         | Adjusted using `combine-layers.py`                                                                                                                                      | Colors file used                                                                   |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | [![Tarantula Nebula](example_images/compressed/tarantula_nebula.jpg)](example_images/original/tarantula_nebula.jpg?raw=true)                              | [![Tarantula Nebula](example_images/compressed/tarantula_nebula_custom.jpg)](example_images/original/tarantula_nebula_custom.jpg?raw=true)                              | [tarantula_nebula.txt](example_images/colors/tarantula_nebula.txt)                 |
 | [![Cosmic Cliffs](example_images/compressed/cosmic_cliffs.jpg)](example_images/original/cosmic_cliffs.jpg?raw=true)                                       | [![Cosmic Cliffs](example_images/compressed/cosmic_cliffs_custom.jpg)](example_images/original/cosmic_cliffs_custom.jpg?raw=true)                                       | [cosmic_cliffs.txt](example_images/colors/cosmic_cliffs.txt)                       |
